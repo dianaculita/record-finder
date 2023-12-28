@@ -25,7 +25,7 @@
 			"response": []
 		},
 		{
-			"name": "Get records by id",
+			"name": "Get record by id",
 			"request": {
 				"method": "GET",
 				"header": [],
