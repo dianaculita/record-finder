@@ -1,59 +1,81 @@
 package main
 
 import (
+	//"context"
+	"example/my-dependencies/record"
+	"fmt"
+
+	//"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"log"
 	"net/http"
+	//"strconv"
 )
 
-type Record struct {
-	Id     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Year   int32   `json:"year"`
-	Price  float64 `json:"price"`
-}
+var DRIVER, ERR = neo4j.NewDriverWithContext("bolt://localhost:7687", neo4j.BasicAuth("neo4j", "parola123", ""))
 
-var records = []Record{
-	{Id: "1", Title: "STMPD RCRDS", Artist: "Martin Garrix", Year: 2023, Price: 56.99},
-	{Id: "2", Title: "Ether", Artist: "Martin Garrix", Year: 2019, Price: 90.99},
-	{Id: "3", Title: "Anima", Artist: "Martin Garrix", Year: 2018, Price: 70.99},
-}
+var records = []record.Record{}
+var neo4jRecordRepo = record.NewNeo4jRecordRepository(DRIVER)
 
 func main() {
+
 	router := gin.Default()
 	router.GET("/records", getRecords)
 	router.POST("/records", addRecord)
-	router.GET("/records/:id", getRecordById)
+	router.GET("/records/search/:title", searchRecordsByTitle)
+
+	if ERR != nil {
+		log.Fatalf("Failed to create Neo4j driver: %v", ERR)
+	}
+	//defer DRIVER.Close(router)
 
 	router.Run("localhost:8080")
 }
 
+// ENDPOINT IMPLEMENTATIONS
+
 func getRecords(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, records)
+	res, err := neo4jRecordRepo.GetAll(c)
+
+	if err != nil {
+		log.Fatalf("Failed to get all records: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
 }
 
 func addRecord(c *gin.Context) {
-	var newRecord Record
+	var newRecord record.Record
 
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
+	// Call BindJSON to bind the received JSON to newRecord
 	if err := c.BindJSON(&newRecord); err != nil {
 		return
 	}
 
-	// Add the new album to the slice.
-	records = append(records, newRecord)
-	c.IndentedJSON(http.StatusCreated, newRecord)
+	fmt.Println(newRecord)
+	err := neo4jRecordRepo.CreateRecord(c, newRecord)
+	if err != nil {
+		log.Fatalf("Failed to create record: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "record successfully created"})
 }
 
-func getRecordById(c *gin.Context) {
-	id := c.Param("id")
+func searchRecordsByTitle(c *gin.Context) {
+	title := c.Param("title")
 
-	for _, rec := range records {
-		if rec.Id == id {
-			c.IndentedJSON(http.StatusOK, rec)
-			return
-		}
+	//todo: add support for pagination
+
+	res, err := neo4jRecordRepo.SearchRecordsByTitle(c, title)
+
+	if err != nil {
+		log.Fatalf("Failed to search all records by title: %v", err)
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "record not found"})
+
+	if res == nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no record found"})
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
 }

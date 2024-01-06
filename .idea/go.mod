@@ -2,7 +2,11 @@ module example/my-dependencies
 
 go 1.21.5
 
-require github.com/gin-gonic/gin v1.9.1
+require (
+	github.com/gin-gonic/gin v1.9.1
+	github.com/neo4j/neo4j-go-driver/v4 v4.4.7
+	github.com/neo4j/neo4j-go-driver/v5 v5.16.0
+)
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
