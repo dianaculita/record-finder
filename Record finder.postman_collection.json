@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "6e37e7a1-0672-44c5-a4b4-cb1c12a5519b",
+		"_postman_id": "fee1900f-0fc1-4207-99cd-579403fcf3b8",
 		"name": "Record finder",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32105480"
 	},
 	"item": [
 		{
@@ -25,33 +26,13 @@
 			"response": []
 		},
 		{
-			"name": "Get record by id",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/records/1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"records",
-						"1"
-					]
-				}
-			},
-			"response": []
-		},
-		{
 			"name": "Add new record",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"id\":\"4\",\r\n    \"title\":\"Eras\",\r\n    \"artist\":\"Taylor Swift\",\r\n    \"year\":2023,\r\n    \"price\":100\r\n}",
+					"raw": "{\r\n    \"title\":\"Void\",\r\n    \"year\":2021,\r\n    \"price\":50\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -67,6 +48,27 @@
 					"port": "8080",
 					"path": [
 						"records"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search records by title",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/records/search/i",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"records",
+						"search",
+						"i"
 					]
 				}
 			},
