@@ -1,6 +1,7 @@
 package main
 
 import (
+	"example/my-dependencies/artist"
 	//"context"
 	"example/my-dependencies/record"
 	"fmt"
@@ -17,13 +18,18 @@ var DRIVER, ERR = neo4j.NewDriverWithContext("bolt://localhost:7687", neo4j.Basi
 
 var records = []record.Record{}
 var neo4jRecordRepo = record.NewNeo4jRecordRepository(DRIVER)
+var neo4jArtistRepo = artist.NewNeo4jArtistRepository(DRIVER)
 
 func main() {
 
 	router := gin.Default()
-	router.GET("/records", getRecords)
-	router.POST("/records", addRecord)
-	router.GET("/records/search/:title", searchRecordsByTitle)
+	router.GET("/rf-app/records", getRecords)
+	router.POST("/rf-app/records", addRecord)
+	router.GET("/rf-app/records/search/:title", searchRecordsByTitle)
+
+	router.GET("/rf-app/artists", getArtists)
+	router.POST("/rf-app/artists", addArtist)
+	router.GET("/rf-app/artists/search/:name", searchArtistsByName)
 
 	if ERR != nil {
 		log.Fatalf("Failed to create Neo4j driver: %v", ERR)
@@ -31,6 +37,51 @@ func main() {
 	//defer DRIVER.Close(router)
 
 	router.Run("localhost:8080")
+}
+
+func searchArtistsByName(c *gin.Context) {
+	name := c.Param("name")
+
+	//todo: add support for pagination
+
+	res, err := neo4jArtistRepo.SearchArtistsByName(c, name)
+
+	if err != nil {
+		log.Fatalf("Failed to search all artists by name: %v", err)
+	}
+
+	if res == nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no artists found"})
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
+}
+
+func addArtist(c *gin.Context) {
+	var newArtist artist.Artist
+
+	// Call BindJSON to bind the received JSON to newRecord
+	if err := c.BindJSON(&newArtist); err != nil {
+		return
+	}
+
+	fmt.Println(newArtist)
+	err := neo4jArtistRepo.CreateArtist(c, newArtist)
+	if err != nil {
+		log.Fatalf("Failed to create artist: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "artist successfully created"})
+}
+
+func getArtists(c *gin.Context) {
+	res, err := neo4jArtistRepo.GetAll(c)
+
+	if err != nil {
+		log.Fatalf("Failed to get all artists: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
 }
 
 // ENDPOINT IMPLEMENTATIONS
