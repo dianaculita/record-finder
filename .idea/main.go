@@ -2,6 +2,7 @@ package main
 
 import (
 	"example/my-dependencies/artist"
+	"example/my-dependencies/label"
 	//"context"
 	"example/my-dependencies/record"
 	"fmt"
@@ -16,9 +17,9 @@ import (
 
 var DRIVER, ERR = neo4j.NewDriverWithContext("bolt://localhost:7687", neo4j.BasicAuth("neo4j", "parola123", ""))
 
-var records = []record.Record{}
 var neo4jRecordRepo = record.NewNeo4jRecordRepository(DRIVER)
 var neo4jArtistRepo = artist.NewNeo4jArtistRepository(DRIVER)
+var neo4jLabelRepo = label.NewNeo4jLabelRepository(DRIVER)
 
 func main() {
 
@@ -31,12 +32,60 @@ func main() {
 	router.POST("/rf-app/artists", addArtist)
 	router.GET("/rf-app/artists/search/:name", searchArtistsByName)
 
+	router.GET("/rf-app/labels", getLabels)
+	router.POST("/rf-app/labels", addLabel)
+	router.GET("/rf-app/labels/search/:name", searchLabelsByName)
+
 	if ERR != nil {
 		log.Fatalf("Failed to create Neo4j driver: %v", ERR)
 	}
 	//defer DRIVER.Close(router)
 
 	router.Run("localhost:8080")
+}
+
+func searchLabelsByName(c *gin.Context) {
+	name := c.Param("name")
+
+	//todo: add support for pagination
+
+	res, err := neo4jLabelRepo.SearchLabelsByName(c, name)
+
+	if err != nil {
+		log.Fatalf("Failed to search all labels by name: %v", err)
+	}
+
+	if res == nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no labels found"})
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
+}
+
+func addLabel(c *gin.Context) {
+	var newLabel label.Label
+
+	if err := c.BindJSON(&newLabel); err != nil {
+		return
+	}
+
+	fmt.Println(newLabel)
+	err := neo4jLabelRepo.CreateLabel(c, newLabel)
+	if err != nil {
+		log.Fatalf("Failed to create label: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "label successfully created"})
+}
+
+func getLabels(c *gin.Context) {
+	res, err := neo4jLabelRepo.GetAll(c)
+
+	if err != nil {
+		log.Fatalf("Failed to get all labels: %v", err)
+	}
+
+	c.IndentedJSON(http.StatusOK, res)
 }
 
 func searchArtistsByName(c *gin.Context) {
@@ -60,7 +109,6 @@ func searchArtistsByName(c *gin.Context) {
 func addArtist(c *gin.Context) {
 	var newArtist artist.Artist
 
-	// Call BindJSON to bind the received JSON to newRecord
 	if err := c.BindJSON(&newArtist); err != nil {
 		return
 	}
